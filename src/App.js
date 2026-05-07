@@ -44,6 +44,9 @@ const App = () => {
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPropertyCoords, setNewPropertyCoords] = useState(null);
+
+  // Add this temporarily inside your component to "use" them
+console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
   
   // 2. GROWTH & LOYALTY STATE
   const [userWallet, setUserWallet] = useState({ 
@@ -120,6 +123,8 @@ const App = () => {
           <button onClick={() => setIsLoggedIn(false)} style={logoutBtn}>Exit</button>
         </div>
       </nav>
+
+      
 
       {/* VIEW ENGINE (Conditional Layering) */}
       <main style={viewPort}>
