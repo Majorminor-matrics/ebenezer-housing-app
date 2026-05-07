@@ -1,7 +1,75 @@
-.App {
-  text-align: center;
+/* Import Leaflet CSS (Keep if you still use Leaflet components elsewhere) */
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+/* 1. Global Reset - Essential for the "Uber" Full-Screen Look */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevents double scrollbars */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+.App {
+  text-align: center;
+  width: 100%;
+  height: 100vh;
+}
+
+/* 2. MapLibre Popup Customization - Makes house details look premium */
+.maplibregl-popup-content {
+  padding: 0 !important; /* Removes default padding for our custom HTML cards */
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+  border: none !important;
+}
+
+.maplibregl-popup-close-button {
+  color: white !important;
+  padding: 8px !important;
+  font-size: 18px !important;
+  z-index: 11;
+}
+
+/* 3. Search & UI Elements */
+.uber-search-bar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 90%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  border-radius: 30px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.category-pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: white;
+  border: 1px solid #eee;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.category-pill:hover {
+  background: #000;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* 4. Legacy/React Default Styles (Cleanup) */
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -13,26 +81,17 @@
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
 @keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 5. Marker Styling */
+.marker {
+  transition: transform 0.2s ease-in-out;
+}
+
+.marker:hover {
+  transform: scale(1.2);
+  filter: brightness(1.1);
 }
