@@ -75,11 +75,38 @@ body, html, #root {
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+@media (max-width: 768px) {
+    /* Ensure the sidebar slides ALL the way out */
+    aside {
+        transform: translateY(100%); /* Default state: Hidden */
+        transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    }
+
+    /* Only show when the state is true */
+    aside.open {
+        transform: translateY(0) !important;
+    }
+
+    /* Move Google Map controls so they are visible even when list is open */
+    .gm-style-mtc, .gm-svpc {
+        margin-top: 85px !important; /* Push below the Ebenezer Header */
+        z-index: 5 !important;
+    }
 }
+
+    /* 6. Floating Glass Header (Matches your Screenshot) */
+    header {
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        width: calc(100% - 30px) !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(12px) !important;
+        border-radius: 20px !important;
+        z-index: 1100 !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    }
 
 @keyframes App-logo-spin {
   from { transform: rotate(0deg); }
@@ -95,3 +122,44 @@ body, html, #root {
   transform: scale(1.2);
   filter: brightness(1.1);
 }
+
+/* --- CLASSY MOBILE OVERHAUL --- */
+@media (max-width: 768px) {
+    /* Ensure the sidebar slides ALL the way out */
+    aside {
+        transform: translateY(100%); /* Default state: Hidden */
+        transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    }
+
+    /* Only show when the state is true */
+    aside.open {
+        transform: translateY(0) !important;
+    }
+
+    /* Move Google Map controls so they are visible even when list is open */
+    .gm-style-mtc, .gm-svpc {
+        margin-top: 85px !important; /* Push below the Ebenezer Header */
+        z-index: 5 !important;
+    }
+}
+    /* Ensure the 360 degree container doesn't get cut off */
+    div[style*="modalGallery"] {
+        height: 300px !important;
+        min-height: 300px !important;
+        border-radius: 25px !important;
+        margin-bottom: 15px;
+    }
+
+    /* 6. Floating Glass Header (Matches your Screenshot) */
+    header {
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        width: calc(100% - 30px) !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(12px) !important;
+        border-radius: 20px !important;
+        z-index: 1100 !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    }

@@ -5,7 +5,9 @@ import LandlordDashboard from './LandlordDashboard';
 import AIWizard from './AIWizard';
 import LoyaltyModule from './LoyaltyModule';
 
-// --- SUB-COMPONENT: AUTHSHIELD ---
+const MAPTILER_KEY = "GOOGLE_MAPS_ACTIVE"; 
+
+// --- AUTH SHIELD (Full Restoration) ---
 const AuthShield = ({ onLogin, setUserRole, userRole, isRegistering, setIsRegistering }) => {
   return (
     <div style={authWrapper}>
@@ -32,37 +34,27 @@ const AuthShield = ({ onLogin, setUserRole, userRole, isRegistering, setIsRegist
   );
 };
 
-// --- MAIN APP COMPONENT ---
 const App = () => {
-  // 1. CORE STATE
+  // State Management
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState('tenant'); 
   const [currentView, setCurrentView] = useState('map'); 
   const [isRegistering, setIsRegistering] = useState(false);
-
-  // LANDLORD WORKFLOW STATES
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPropertyCoords, setNewPropertyCoords] = useState(null);
 
-  // Add this temporarily inside your component to "use" them
-console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
-  
-  // 2. GROWTH & LOYALTY STATE
+  // Growth & Loyalty Data
   const [userWallet, setUserWallet] = useState({ 
-    credits: 500, 
-    referrals: 2, 
-    coupons: ['WELCOME50'],
-    points: 120 
+    credits: 500, referrals: 2, coupons: ['WELCOME50'], points: 120 
   });
 
-  // 3. UI OVERLAY STATE
+  // UI Overlays
   const [showWizard, setShowWizard] = useState(false);
   const [showLoyalty, setShowLoyalty] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({ amount: 0, reason: '' });
 
-  // --- LOGIC HANDLERS ---
   const handleLogin = (e) => {
     e.preventDefault();
     setIsLoggedIn(true);
@@ -78,14 +70,24 @@ console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
     alert(`Coupon ${code} validated. Discount applied to your next viewing!`);
   };
 
+  // --- MAP CLICK HANDLER ---
+  const handleMapClick = (coords) => {
+    if (isAddingMode) {
+      setNewPropertyCoords(coords);
+      setIsAddingMode(false);
+      setShowAddModal(true);
+      setCurrentView('studio'); // Return to studio to finish the form
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <AuthShield 
         onLogin={handleLogin} 
         setUserRole={setUserRole} 
         userRole={userRole} 
-        isRegistering={isRegistering}
-        setIsRegistering={setIsRegistering}
+        isRegistering={isRegistering} 
+        setIsRegistering={setIsRegistering} 
       />
     );
   }
@@ -93,20 +95,27 @@ console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
   return (
     <div style={mainLayout}>
       
-      {/* GLOBAL NAVIGATION (Floating Glassmorphism) */}
-      {/* pointerEvents: 'none' ensures the nav container doesn't block the map underneath */}
-      <nav style={{...floatingNav, pointerEvents: 'none'}}>
-        <div style={{...navGroup, pointerEvents: 'auto'}}>
+      {/* SELECTION GUIDANCE OVERLAY */}
+      {isAddingMode && (
+        <div style={selectionOverlay}>
+           <div style={selectionBadge}>
+             📍 Tap the map to set property location
+             <button onClick={() => setIsAddingMode(false)} style={cancelSelectionBtn}>Cancel</button>
+           </div>
+        </div>
+      )}
+
+      <nav style={floatingNavContainer}>
+        {/* Left Control Group */}
+        <div style={navIsland}>
           <button onClick={() => setCurrentView('map')} style={navLink(currentView === 'map')}>📍 Explore</button>
-          
           {userRole === 'tenant' && (
             <>
               <button onClick={() => setShowWizard(true)} style={aiSparkleBtn}>✨ AI Finder</button>
-              <button onClick={() => setShowLoyalty(true)} style={rewardBtn}>🎁 Rewards ({userWallet.credits})</button>
+              <button onClick={() => setShowLoyalty(true)} style={rewardBtn}>🎁 Rewards</button>
               <button onClick={() => setCurrentView('hub')} style={navLink(currentView === 'hub')}>💬 Hub</button>
             </>
           )}
-
           {(userRole === 'landlord' || userRole === 'agency') && (
             <button onClick={() => setCurrentView('studio')} style={navLink(currentView === 'studio')}>
               {userRole === 'agency' ? '🏢 Agency Pro' : '📊 Studio'}
@@ -114,65 +123,60 @@ console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
           )}
         </div>
 
-        <div style={{...navRight, pointerEvents: 'auto'}}>
+        {/* Right Status Group */}
+        <div style={navIsland}>
           <div style={userBadge}>
-            <span style={roleTag}>{userRole} Account</span>
-            <span style={walletAmt}>KSh {userWallet.credits.toLocaleString()}</span>
+            <span style={roleTag}>{userRole}</span>
+            <span style={walletAmt}>KSh {userWallet.credits}</span>
           </div>
           <button onClick={() => triggerPayment(200, 'Viewing Fee')} style={payBtnHeader}>Pay Fee</button>
           <button onClick={() => setIsLoggedIn(false)} style={logoutBtn}>Exit</button>
         </div>
       </nav>
 
-      
-
-      {/* VIEW ENGINE (Conditional Layering) */}
       <main style={viewPort}>
-        
-        {/* MAP VIEW - Always mounted but z-indexed to top when active */}
         <div style={{
-          ...viewWrapper(currentView === 'map'),
-          zIndex: currentView === 'map' ? 10 : 1,
-          pointerEvents: currentView === 'map' ? 'auto' : 'none'
+          ...viewWrapper, 
+          visibility: currentView === 'map' ? 'visible' : 'hidden',
+          zIndex: currentView === 'map' ? 1 : -1,
+          height: '100vh',
+          width: '100vw'
         }}>
           <MapDisplay 
             isAddingMode={isAddingMode} 
             setIsAddingMode={setIsAddingMode} 
-            setNewPropertyCoords={setNewPropertyCoords}
+            setNewPropertyCoords={handleMapClick} // Bridge to the click handler
             setShowAddModal={setShowAddModal}
           />
         </div>
         
         {/* HUB VIEW */}
-        <div style={{
-          ...viewWrapper(currentView === 'hub'),
-          zIndex: currentView === 'hub' ? 20 : 1,
-          pointerEvents: currentView === 'hub' ? 'auto' : 'none'
-        }}>
-          <PropertyHub />
-        </div>
+        {currentView === 'hub' && (
+          <div style={{...viewWrapper, zIndex: 10, background: '#f8fafc'}}>
+            <PropertyHub />
+          </div>
+        )}
 
-        {/* STUDIO/DASHBOARD VIEW */}
-        <div style={{
-          ...viewWrapper(currentView === 'studio'),
-          zIndex: currentView === 'studio' ? 20 : 1,
-          pointerEvents: currentView === 'studio' ? 'auto' : 'none'
-        }}>
-          <LandlordDashboard 
-            mode={userRole} 
-            wallet={userWallet} 
-            setIsAddingMode={(val) => {
-              setIsAddingMode(val);
-              if(val) setCurrentView('map'); // Automatically switch to map when adding
-            }}
-            showAddModal={showAddModal}
-            setShowAddModal={setShowAddModal}
-            newPropertyCoords={newPropertyCoords}
-          />
-        </div>
+        {/* STUDIO VIEW */}
+        {currentView === 'studio' && (
+          <div style={{...viewWrapper, zIndex: 10, background: '#f8fafc'}}>
+            <LandlordDashboard 
+              mode={userRole} 
+              wallet={userWallet} 
+              setIsAddingMode={(val) => {
+                setIsAddingMode(val);
+                if(val) setCurrentView('map');
+              }}
+              showAddModal={showAddModal}
+              setShowAddModal={setShowAddModal}
+              newPropertyCoords={newPropertyCoords}
+            />
+          </div>
+        )}
       </main>
 
-      {/* --- OVERLAYS (MODALS) --- */}
+      {/* --- OVERLAYS & MODALS --- */}
+
       {showWizard && (
         <div style={modalBackdrop}>
           <div style={glassyPortrait}>
@@ -186,11 +190,7 @@ console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
         <div style={modalBackdrop}>
           <div style={glassyPortrait}>
             <button style={closeModalX} onClick={() => setShowLoyalty(false)}>✕</button>
-            <LoyaltyModule 
-              wallet={userWallet} 
-              onUseCoupon={useCoupon} 
-              isAgency={userRole === 'agency'}
-            />
+            <LoyaltyModule wallet={userWallet} onUseCoupon={useCoupon} />
           </div>
         </div>
       )}
@@ -198,80 +198,143 @@ console.log("Debug Info:", showAddModal, newPropertyCoords, MAPTILER_KEY);
       {showPayment && (
         <div style={modalBackdrop}>
           <div style={mpesaCard}>
-            <div style={mpesaBrand}>Lipa na M-PESA</div>
+            <div style={mpesaBrand}>M-PESA SAFARICOM</div>
+            <h3 style={{margin:0}}>Payment Portal</h3>
             <p style={{fontSize: '12px', color: '#64748b'}}>{paymentDetails.reason}</p>
-            <h2 style={priceBig}>KSh {paymentDetails.amount}</h2>
-            <input type="tel" placeholder="07XX XXX XXX" style={fieldStyle} />
-            <button onClick={() => setShowPayment(false)} style={mpesaConfirmBtn}>Request STK Push</button>
-            <button onClick={() => setShowPayment(false)} style={cancelBtn}>Cancel</button>
+            <div style={priceBig}>KSh {paymentDetails.amount}</div>
+            <input type="text" placeholder="Enter Phone Number" style={fieldStyle} />
+            <button style={mpesaConfirmBtn} onClick={() => setShowPayment(false)}>Request STK Push</button>
+            <button style={cancelBtn} onClick={() => setShowPayment(false)}>Cancel</button>
           </div>
         </div>
       )}
 
       <style>{`
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(0.9) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        * { box-sizing: border-box; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #f1f5f9; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #000; overflow: hidden; }
+        .gm-style-mtc { top: 100px !important; }
+        .gm-svpc { top: 150px !important; }
       `}</style>
     </div>
   );
 };
 
-// --- STYLING OBJECTS ---
+// --- STYLING ---
+
+const mainLayout = { position: 'relative', height: '100vh', width: '100vw', background: '#000' };
+const viewPort = { position: 'relative', height: '100%', width: '100%' };
+
+const floatingNavContainer = {
+  position: 'absolute',
+  top: '10px',
+  left: '400px',
+  right: '40px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  padding: '0 20px',
+  zIndex: 2000,
+  pointerEvents: 'none'
+};
+
+const navIsland = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  background: 'rgba(255, 255, 255, 0.8)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+  padding: '8px',
+  borderRadius: '20px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+  border: '1px solid rgba(255,255,255,0.3)',
+  pointerEvents: 'auto'
+};
+
+const viewWrapper = { 
+  position: 'absolute', 
+  top: 0, left: 0, 
+  width: '100%', height: '100%' 
+};
+
+// Selection Mode Styles
+const selectionOverlay = {
+  position: 'absolute',
+  top: '100px',
+  left: '0',
+  right: '0',
+  display: 'flex',
+  justifyContent: 'center',
+  zIndex: 3000,
+  pointerEvents: 'none'
+};
+
+const selectionBadge = {
+  background: '#1a73e8',
+  color: '#fff',
+  padding: '12px 24px',
+  borderRadius: '50px',
+  fontWeight: 'bold',
+  boxShadow: '0 10px 25px rgba(26, 115, 232, 0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '15px',
+  pointerEvents: 'auto'
+};
+
+const cancelSelectionBtn = {
+  background: 'rgba(255,255,255,0.2)',
+  border: 'none',
+  color: '#fff',
+  padding: '5px 12px',
+  borderRadius: '10px',
+  cursor: 'pointer',
+  fontSize: '11px',
+  fontWeight: 'bold'
+};
+
+// Auth Styles
 const authWrapper = { height: '100vh', width: '100vw', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const authCard = { background: '#fff', padding: '50px 40px', borderRadius: '40px', width: '400px', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' };
+const authCard = { background: '#fff', padding: '50px 40px', borderRadius: '40px', width: '400px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' };
 const logoMain = { width: '60px', height: '60px', background: '#1a73e8', color: '#fff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', fontWeight: '900', margin: '0 auto 20px' };
 const authTitle = { fontSize: '24px', fontWeight: '800', marginBottom: '8px' };
 const authSub = { fontSize: '13px', color: '#64748b', marginBottom: '30px' };
 const authForm = { display: 'flex', flexDirection: 'column', gap: '15px' };
-const fieldStyle = { padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', fontSize: '15px' };
+const fieldStyle = { padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#f8fafc', outline: 'none', fontSize: '15px', width: '100%' };
 const loginBtn = { padding: '16px', borderRadius: '14px', background: '#1a73e8', color: '#fff', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', marginTop: '10px' };
 const toggleAuth = { background: 'none', border: 'none', color: '#1a73e8', marginTop: '20px', fontSize: '13px', cursor: 'pointer' };
-
 const rolePicker = { display: 'flex', background: '#f1f5f9', padding: '5px', borderRadius: '12px', marginBottom: '10px' };
 const roleBtn = (active) => ({ flex: 1, padding: '10px', border: 'none', borderRadius: '10px', background: active ? '#fff' : 'transparent', color: active ? '#1a73e8' : '#64748b', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' });
 
-const mainLayout = { position: 'relative', height: '100vh', width: '100vw' };
-const floatingNav = { position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', width: '94%', zIndex: 1000, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(15px)', padding: '12px 25px', borderRadius: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' };
-const navGroup = { display: 'flex', gap: '10px' };
-const navLink = (active) => ({ padding: '10px 20px', borderRadius: '15px', border: 'none', background: active ? '#1a73e8' : 'transparent', color: active ? '#fff' : '#1e293b', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' });
-const aiSparkleBtn = { padding: '10px 20px', borderRadius: '15px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' };
-const rewardBtn = { padding: '10px 20px', borderRadius: '15px', border: 'none', background: '#fef3c7', color: '#d97706', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' };
-
-const navRight = { display: 'flex', gap: '20px', alignItems: 'center' };
-const userBadge = { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' };
-const roleTag = { fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8' };
-const walletAmt = { fontSize: '14px', fontWeight: 'bold', color: '#10b981' };
-const payBtnHeader = { background: '#10b981', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' };
-const logoutBtn = { color: '#ef4444', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' };
-
-const viewPort = { position: 'relative', height: '100%', width: '100%', background: '#000' };
-const viewWrapper = (visible) => ({ 
-  position: 'absolute', 
-  top: 0, 
-  left: 0, 
-  width: '100%', 
-  height: '100%', 
-  // Instead of hiding it, we move it behind or in front
-  zIndex: visible ? 10 : -1, 
-  opacity: visible ? 1 : 0,
-  pointerEvents: visible ? 'auto' : 'none',
-  transition: 'opacity 0.3s ease-in-out'
+// Nav Elements
+const navLink = (active) => ({ 
+  padding: '10px 18px', borderRadius: '14px', border: 'none', 
+  background: active ? '#1a73e8' : 'transparent', 
+  color: active ? '#fff' : '#1e293b', 
+  fontWeight: '700', cursor: 'pointer', fontSize: '13px' 
 });
+const aiSparkleBtn = { 
+  padding: '10px 18px', borderRadius: '14px', border: 'none', 
+  background: 'linear-gradient(135deg, #6366f1, #a855f7)', 
+  color: '#fff', fontWeight: '700', cursor: 'pointer', fontSize: '13px' 
+};
+const rewardBtn = { 
+  padding: '10px 18px', borderRadius: '14px', border: 'none', 
+  background: '#fef3c7', color: '#d97706', fontWeight: '700', cursor: 'pointer', fontSize: '13px' 
+};
+const userBadge = { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0 10px' };
+const roleTag = { fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' };
+const walletAmt = { fontSize: '13px', fontWeight: '800', color: '#10b981' };
+const payBtnHeader = { background: '#10b981', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', fontSize: '12px' };
+const logoutBtn = { color: '#ef4444', background: 'none', border: 'none', fontWeight: '800', cursor: 'pointer', fontSize: '12px' };
 
-const modalBackdrop = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', zIndex: 50000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const glassyPortrait = { width: '380px', height: '85vh', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(30px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative', overflowY: 'auto' };
-const closeModalX = { position: 'absolute', top: '20px', right: '20px', background: 'rgba(0,0,0,0.1)', border: 'none', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', zIndex: 60000 };
-
-const mpesaCard = { background: '#fff', width: '340px', padding: '40px', borderRadius: '35px', textAlign: 'center' };
-const mpesaBrand = { color: '#34c759', fontWeight: '900', fontSize: '14px', marginBottom: '15px', textTransform: 'uppercase' };
-const priceBig = { fontSize: '32px', fontWeight: '900', margin: '15px 0', color: '#1e293b' };
-const mpesaConfirmBtn = { width: '100%', padding: '16px', borderRadius: '15px', background: '#34c759', color: '#fff', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', marginTop: '20px' };
-const cancelBtn = { background: 'none', border: 'none', color: '#94a3b8', marginTop: '15px', cursor: 'pointer', fontSize: '13px' };
+// Overlays
+const modalBackdrop = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const glassyPortrait = { width: '400px', height: '80vh', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', borderRadius: '35px', border: '1px solid rgba(255,255,255,0.4)', position: 'relative', overflowY: 'auto', boxShadow: '0 30px 60px rgba(0,0,0,0.2)' };
+const closeModalX = { position: 'absolute', top: '20px', right: '20px', background: 'rgba(0,0,0,0.05)', border: 'none', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', zIndex: 10000 };
+const mpesaCard = { background: '#fff', width: '350px', padding: '40px', borderRadius: '35px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' };
+const mpesaBrand = { color: '#34c759', fontWeight: '900', fontSize: '12px', marginBottom: '10px', letterSpacing: '1px' };
+const priceBig = { fontSize: '36px', fontWeight: '900', margin: '20px 0', color: '#1e293b' };
+const mpesaConfirmBtn = { width: '100%', padding: '18px', borderRadius: '16px', background: '#34c759', color: '#fff', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', marginTop: '10px' };
+const cancelBtn = { background: 'none', border: 'none', color: '#94a3b8', marginTop: '15px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' };
 
 export default App;
